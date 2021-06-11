@@ -7,7 +7,7 @@ Use
 ```commandline
 srun --mem=16G --time=03:00:00 --pty /bin/bash
 ```
-Move to the working directory.
+Move to the working directory or also refer to as <whl_directory>.
 Use 
 ```commandline
 cd /home/l/longdang/Desktop/federated-learning-lib
@@ -175,11 +175,11 @@ local_training:
   name: LocalTrainingHandler
   path: ibmfl.party.training.local_training_handler
 model:
-  name: KerasFLModel
+  name: TensorFlowFLModel
   path: ibmfl.model.keras_fl_model
   spec:
-    model_definition: examples/configs/iter_avg/keras/compiled_keras.h5
-    model_name: keras-cnn
+    model_definition: examples/configs/iter_avg/keras/compiled_keras.h5 # For me, the parties could not load the h5 file. I updated it to be "examples/configs/iter_avg/tf" and it works!!! Need to do experiments on this key.
+    model_name: tf-cnn
 protocol_handler:
   name: PartyProtocolHandler
   path: ibmfl.party.party_protocol_handler
@@ -188,41 +188,44 @@ Notice that the configuration files contain a `data` section that is different f
 
 ### 4. Start the aggregator
 
-To start the aggregator, open a terminal window running the IBM federated fearning environment set up beforehand,
+To start the aggregator, open the terminal window running the IBM federated fearning environment set up beforehand,
 and check that you are in the correct directory.  In the terminal run:
 ```commandline
-python -m ibmfl.aggregator.aggregator examples/configs/iter_avg/keras/config_agg.yml
+python -m ibmfl.aggregator.aggregator examples/configs/iter_avg/tf/config_agg.yml 2> stderr_agg.txt | tee stdout_agg.txt
 ```
-where the path provided is the aggregator configuration file path.
+where the path provided is the aggregator configuration file path. 
 ```buildoutcfg
-2020-06-29 11:38:38,058 - ibmfl.util.config - INFO - Getting details from config file.
-2020-06-29 11:38:45,001 - ibmfl.util.config - INFO - No model config provided for this setup.
-2020-06-29 11:38:45,353 - ibmfl.util.config - INFO - No local training config provided for this setup.
-2020-06-29 11:38:45,353 - ibmfl.connection.flask_connection - INFO - RestSender initialized
-2020-06-29 11:38:45,353 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.START
-<ibmfl.connection.router_handler.Router object at 0x106cb9630>
-2020-06-29 11:38:45,353 - ibmfl.connection.flask_connection - INFO - Receiver Initialized
-2020-06-29 11:38:45,353 - ibmfl.connection.flask_connection - INFO - Initializing Flask application
-2020-06-29 11:38:45,356 - __main__ - INFO - Aggregator initialization successful
+2021-06-11 10:22:28,823 | 1.0.5 | INFO | ibmfl.util.config                             | Getting details from config file.
+2021-06-11 10:22:30,993 | 1.0.5 | INFO | ibmfl.util.config                             | No metrics recorder config provided for this setup.
+2021-06-11 10:22:30,993 | 1.0.5 | INFO | ibmfl.util.config                             | No model config provided for this setup.
+2021-06-11 10:22:31,231 | 1.0.5 | INFO | ibmfl.util.config                             | No data config provided for this setup.
+2021-06-11 10:22:31,231 | 1.0.5 | INFO | ibmfl.util.data_handlers.mnist_keras_data_handler | Loaded training data from examples/datasets/mnist.npz
+2021-06-11 10:22:31,641 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | RestSender initialized
+2021-06-11 10:22:31,641 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.START
+2021-06-11 10:22:31,641 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Receiver Initialized
+2021-06-11 10:22:31,641 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Initializing Flask application
+2021-06-11 10:22:31,645 | 1.0.5 | INFO | __main__                                      | Aggregator initialization successful
 ```
 Then in the terminal, type `START` and press enter.
 ```buildoutcfg
-START
-2020-06-29 11:39:24,349 - root - INFO - State: States.CLI_WAIT
-2020-06-29 11:39:24,349 - __main__ - INFO - Aggregator start successful
- * Serving Flask app "ibmfl.connection.flask_connection" (lazy loading)
+2021-06-11 10:22:47,630 | 1.0.5 | INFO | root                                          | State: States.CLI_WAIT
+2021-06-11 10:22:47,630 | 1.0.5 | INFO | __main__                                      | Aggregator start successful
+ * Serving Flask app 'ibmfl.connection.flask_connection' (lazy loading)
  * Environment: production
    WARNING: This is a development server. Do not use it in a production deployment.
    Use a production WSGI server instead.
  * Debug mode: off
-2020-06-29 11:39:24,356 - werkzeug - INFO -  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+2021-06-11 10:22:47,632 | 1.0.5 | INFO | werkzeug                                      |  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 ```
 
 ### 5. Start and register parties 
 
 To start and register a new party, open one new terminal window for each party, running the IBM federated learning environment set up beforehand,
-and make sure you are in the correct directory. In the terminal run:
+and make sure you are in the correct directory. For example, in the terminal run:
 ```commandline
+ssh longdang@svc-3024-9-12
+conda activate tf_21
+cd ~/Desktop/federated-learning-lib/
 python -m ibmfl.party.party examples/configs/iter_avg/keras/config_party<idx>.yml
 ```
 where the path provided is the path to the party's configuration file.
@@ -231,39 +234,25 @@ where the path provided is the path to the party's configuration file.
 in our example, it is noted by changing `config_party<idx>.yml`.
 For instance, to start the 1st party, one would run:
 ```commandline
-python -m ibmfl.party.party examples/configs/iter_avg/keras/config_party0.yml
-```
-```buildoutcfg
-2020-06-29 11:40:30,420 - ibmfl.util.config - INFO - Getting config from file
-2020-06-29 11:40:30,420 - ibmfl.util.config - INFO - Getting details from config file.
-2020-06-29 11:40:33,617 - ibmfl.util.config - INFO - No fusion config provided for this setup.
-2020-06-29 11:40:33,987 - ibmfl.connection.flask_connection - INFO - RestSender initialized
-<ibmfl.connection.router_handler.Router object at 0x135de64a8>
-2020-06-29 11:40:33,997 - ibmfl.connection.flask_connection - INFO - Receiver Initialized
-2020-06-29 11:40:33,997 - ibmfl.connection.flask_connection - INFO - Initializing Flask application
-2020-06-29 11:40:34,000 - __main__ - INFO - Party initialization successful
+ python -m ibmfl.party.party examples/configs/iter_avg/tf/config_party0.yml 2>std_err_party0.txt > stdout_party0.txt
 ```
 You may also see warning messages which are fine.
 In the terminal for each party, type `START` and press enter to start the party. 
 Then type `REGISTER` and press enter to register the party for the federated learning task.
 ```buildoutcfg
 START
-2020-06-29 11:41:35,732 - __main__ - INFO - Party start successful
- * Serving Flask app "ibmfl.connection.flask_connection" (lazy loading)
- * Environment: production
-   WARNING: This is a development server. Do not use it in a production deployment.
-   Use a production WSGI server instead.
- * Debug mode: off
-2020-06-29 11:41:35,735 - werkzeug - INFO -  * Running on http://127.0.0.1:8085/ (Press CTRL+C to quit)
 REGISTER
-2020-06-29 11:41:47,056 - __main__ - INFO - Registering party...
-2020-06-29 11:41:47,071 - __main__ - INFO - Registration Successful
 ```
 The aggregator terminal will also prompt out INFO to show that it receives the party's registration message (as shown in the third figure on the right).
 ```buildoutcfg
-2020-06-29 11:41:47,067 - ibmfl.connection.flask_connection - INFO - Request received for path :6
-2020-06-29 11:41:47,068 - ibmfl.aggregator.protohandler.proto_handler - INFO - Adding party with id 78da36fb-2443-45d0-80d2-b438bf8c01a5
-2020-06-29 11:41:47,069 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:41:47] "POST /6 HTTP/1.1" 200 -
+2021-06-11 10:23:57,316 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :6
+2021-06-11 10:23:57,317 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Adding party with id 44874e3d-b19e-430c-89ca-000d066a79f3
+2021-06-11 10:23:57,317 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of registered parties:1
+2021-06-11 10:23:57,318 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:23:57] "POST /6 HTTP/1.1" 200 -
+2021-06-11 10:24:00,900 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :6
+2021-06-11 10:24:00,900 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Adding party with id de2517a4-a3dd-429b-b697-e81dc99f6bd1
+2021-06-11 10:24:00,900 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of registered parties:2
+2021-06-11 10:24:00,901 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:00] "POST /6 HTTP/1.1" 200 -
 ```
 
 ### 6. Initiate training from the aggregator
@@ -273,122 +262,61 @@ To initiate federated training, type `TRAIN` in your aggregator terminal and pre
 Outputs in the aggregator terminal after running the above command will look like:
 ```buildoutcfg
 TRAIN
-2020-06-29 11:43:43,982 - root - INFO - State: States.PROC_TRAIN
-2020-06-29 11:43:43,982 - __main__ - INFO - Initiating Global Training.
-2020-06-29 11:43:43,982 - ibmfl.aggregator.fusion.fusion_handler - INFO - Warm start disabled.
-2020-06-29 11:43:43,982 - ibmfl.aggregator.fusion.iter_avg_fusion_handler - INFO - Model updateNone
-2020-06-29 11:43:43,983 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.SND_REQ
-2020-06-29 11:43:44,090 - ibmfl.aggregator.protohandler.proto_handler - INFO - Total number of success responses :2
-2020-06-29 11:43:44,090 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.QUORUM_WAIT
-2020-06-29 11:43:44,090 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:47,423 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:47,429 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:47,480 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:47] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:47,518 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:47] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:49,094 - ibmfl.aggregator.protohandler.proto_handler - INFO - Timeout:60 Time spent:5
-2020-06-29 11:43:49,094 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:49,094 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.PROC_RSP
-2020-06-29 11:43:49,108 - ibmfl.aggregator.fusion.iter_avg_fusion_handler - INFO - Model update<ibmfl.model.model_update.ModelUpdate object at 0x111835828>
-2020-06-29 11:43:49,108 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.SND_REQ
-2020-06-29 11:43:49,318 - ibmfl.aggregator.protohandler.proto_handler - INFO - Total number of success responses :2
-2020-06-29 11:43:49,318 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.QUORUM_WAIT
-2020-06-29 11:43:49,318 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:51,096 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:51,131 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:51] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:51,133 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:51,176 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:51] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:54,321 - ibmfl.aggregator.protohandler.proto_handler - INFO - Timeout:60 Time spent:5
-2020-06-29 11:43:54,321 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:54,321 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.PROC_RSP
-2020-06-29 11:43:54,341 - ibmfl.aggregator.fusion.iter_avg_fusion_handler - INFO - Model update<ibmfl.model.model_update.ModelUpdate object at 0x120ceb128>
-2020-06-29 11:43:54,341 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.SND_REQ
-2020-06-29 11:43:54,550 - ibmfl.aggregator.protohandler.proto_handler - INFO - Total number of success responses :2
-2020-06-29 11:43:54,550 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.QUORUM_WAIT
-2020-06-29 11:43:54,550 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:56,553 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:56,583 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:56] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:56,584 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:56,615 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:56] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:59,553 - ibmfl.aggregator.protohandler.proto_handler - INFO - Timeout:60 Time spent:5
-2020-06-29 11:43:59,553 - ibmfl.aggregator.protohandler.proto_handler - INFO - Target Qorum: 2
-2020-06-29 11:43:59,553 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.PROC_RSP
-2020-06-29 11:43:59,571 - ibmfl.aggregator.fusion.iter_avg_fusion_handler - INFO - Reached maximum global rounds. Finish training :) 
-2020-06-29 11:43:59,572 - __main__ - INFO - Finished Global Training
+2021-06-11 10:24:24,543 | 1.0.5 | INFO | root                                          | State: States.TRAIN
+2021-06-11 10:24:24,543 | 1.0.5 | INFO | __main__                                      | Initiating Global Training.
+2021-06-11 10:24:24,544 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_handler        | Warm start disabled.
+2021-06-11 10:24:24,544 | 1.0.5 | INFO | ibmfl.aggregator.fusion.iter_avg_fusion_handler | Model updateNone
+2021-06-11 10:24:24,544 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.SND_MODEL
+2021-06-11 10:24:24,544 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.SND_REQ
+2021-06-11 10:24:24,645 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of success responses :2
+2021-06-11 10:24:24,645 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of parties queried:2
+2021-06-11 10:24:24,646 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of registered parties:2
+2021-06-11 10:24:24,646 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.QUORUM_WAIT
+2021-06-11 10:24:25,421 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:25,524 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:25,532 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:25] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:25,644 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:25] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:29,651 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Timeout:120 Time spent:5
+2021-06-11 10:24:29,651 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.PROC_RSP
+2021-06-11 10:24:29,652 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.RCV_MODEL
+2021-06-11 10:24:29,652 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.AGGREGATING
+2021-06-11 10:24:29,681 | 1.0.5 | INFO | ibmfl.aggregator.fusion.iter_avg_fusion_handler | Model update<ibmfl.model.model_update.ModelUpdate object at 0x2b830daccb00>
+2021-06-11 10:24:29,682 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.SND_MODEL
+2021-06-11 10:24:29,682 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.SND_REQ
+2021-06-11 10:24:29,988 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of success responses :2
+2021-06-11 10:24:29,988 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of parties queried:2
+2021-06-11 10:24:29,988 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of registered parties:2
+2021-06-11 10:24:29,988 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.QUORUM_WAIT
+2021-06-11 10:24:30,204 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:30,209 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:30,395 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:30] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:30,400 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:30] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:34,994 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Timeout:120 Time spent:5
+2021-06-11 10:24:34,995 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.PROC_RSP
+2021-06-11 10:24:34,995 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.RCV_MODEL
+2021-06-11 10:24:34,995 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.AGGREGATING
+2021-06-11 10:24:35,021 | 1.0.5 | INFO | ibmfl.aggregator.fusion.iter_avg_fusion_handler | Model update<ibmfl.model.model_update.ModelUpdate object at 0x2b839d412ba8>
+2021-06-11 10:24:35,021 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.SND_MODEL
+2021-06-11 10:24:35,021 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.SND_REQ
+2021-06-11 10:24:35,385 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of success responses :2
+2021-06-11 10:24:35,385 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of parties queried:2
+2021-06-11 10:24:35,385 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Number of registered parties:2
+2021-06-11 10:24:35,385 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.QUORUM_WAIT
+2021-06-11 10:24:35,516 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:35,522 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :7
+2021-06-11 10:24:35,651 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:35] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:35,694 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:35] "POST /7 HTTP/1.1" 200 -
+2021-06-11 10:24:40,390 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Timeout:120 Time spent:5
+2021-06-11 10:24:40,391 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | State: States.PROC_RSP
+2021-06-11 10:24:40,391 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.RCV_MODEL
+2021-06-11 10:24:40,391 | 1.0.5 | INFO | ibmfl.aggregator.fusion.fusion_state_service  | Fusion state States.AGGREGATING
+2021-06-11 10:24:40,399 | 1.0.5 | INFO | ibmfl.aggregator.fusion.iter_avg_fusion_handler | Reached maximum global rounds. Finish training :)
+2021-06-11 10:24:40,400 | 1.0.5 | INFO | __main__                                      | Finished Global Training
 ```
-Outputs in party's (party 1) terminal after running the above command will look like:
+Outputs in party's (party 1) terminal after running the above command is stored in the following output files for debugging purposes:
 ```buildoutcfg
-2020-06-29 11:43:43,998 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:43,999 - ibmfl.party.party_protocol_handler - INFO - received a async request
-2020-06-29 11:43:43,999 - ibmfl.party.party_protocol_handler - INFO - finished async request
-2020-06-29 11:43:44,000 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:44] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:44,000 - ibmfl.party.party_protocol_handler - INFO - Handling async request in a separate thread
-2020-06-29 11:43:44,001 - ibmfl.party.party_protocol_handler - INFO - Received request from aggregator
-2020-06-29 11:43:44,001 - ibmfl.party.party_protocol_handler - INFO - Received request in with message_type:  7
-2020-06-29 11:43:44,001 - ibmfl.party.party_protocol_handler - INFO - Received request in PH 7
-2020-06-29 11:43:44,001 - ibmfl.util.data_handlers.mnist_keras_data_handler - INFO - Loaded training data from examples/data/mnist/random/data_party0.npz
-x_train shape: (200, 28, 28, 1)
-200 train samples
-5000 test samples
-2020-06-29 11:43:44,052 - ibmfl.party.training.local_training_handler - INFO - No model update was provided.
-2020-06-29 11:43:44,053 - ibmfl.party.training.local_training_handler - INFO - Local training started...
-2020-06-29 11:43:44,053 - ibmfl.model.keras_fl_model - INFO - Using default hyperparameters:  batch_size:128
-2020-06-29 11:43:44,080 - tensorflow - WARNING - From /Users/yi.zhou@ibm.com/opt/anaconda3/envs/ibmfl/lib/python3.6/site-packages/tensorflow/python/ops/math_ops.py:3066: to_int32 (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
-Instructions for updating:
-Use tf.cast instead.
-Epoch 1/3
-200/200 [==============================] - 1s 5ms/step - loss: 2.2764 - acc: 0.1150
-Epoch 2/3
-200/200 [==============================] - 1s 4ms/step - loss: 2.0754 - acc: 0.2400
-Epoch 3/3
-200/200 [==============================] - 1s 6ms/step - loss: 1.7741 - acc: 0.4000
-2020-06-29 11:43:47,353 - ibmfl.party.training.local_training_handler - INFO - Local training done, generating model update...
-2020-06-29 11:43:47,359 - ibmfl.party.party_protocol_handler - INFO - successfully finished async request
-2020-06-29 11:43:49,200 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:49,236 - ibmfl.party.party_protocol_handler - INFO - received a async request
-2020-06-29 11:43:49,236 - ibmfl.party.party_protocol_handler - INFO - finished async request
-2020-06-29 11:43:49,237 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:49] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:49,238 - ibmfl.party.party_protocol_handler - INFO - Handling async request in a separate thread
-2020-06-29 11:43:49,238 - ibmfl.party.party_protocol_handler - INFO - Received request from aggregator
-2020-06-29 11:43:49,238 - ibmfl.party.party_protocol_handler - INFO - Received request in with message_type:  7
-2020-06-29 11:43:49,238 - ibmfl.party.party_protocol_handler - INFO - Received request in PH 7
-2020-06-29 11:43:49,238 - ibmfl.util.data_handlers.mnist_keras_data_handler - INFO - Loaded training data from examples/data/mnist/random/data_party0.npz
-x_train shape: (200, 28, 28, 1)
-200 train samples
-5000 test samples
-2020-06-29 11:43:49,277 - ibmfl.party.training.local_training_handler - INFO - Local model updated.
-2020-06-29 11:43:49,277 - ibmfl.party.training.local_training_handler - INFO - Local training started...
-2020-06-29 11:43:49,277 - ibmfl.model.keras_fl_model - INFO - Using default hyperparameters:  batch_size:128
-Epoch 1/3
-200/200 [==============================] - 1s 4ms/step - loss: 1.4924 - acc: 0.6300
-Epoch 2/3
-200/200 [==============================] - 1s 3ms/step - loss: 1.8330 - acc: 0.4100
-Epoch 3/3
-200/200 [==============================] - 0s 2ms/step - loss: 1.0651 - acc: 0.6800
-2020-06-29 11:43:51,074 - ibmfl.party.training.local_training_handler - INFO - Local training done, generating model update...
-2020-06-29 11:43:51,078 - ibmfl.party.party_protocol_handler - INFO - successfully finished async request
-2020-06-29 11:43:54,418 - ibmfl.connection.flask_connection - INFO - Request received for path :7
-2020-06-29 11:43:54,455 - ibmfl.party.party_protocol_handler - INFO - received a async request
-2020-06-29 11:43:54,456 - ibmfl.party.party_protocol_handler - INFO - finished async request
-2020-06-29 11:43:54,458 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:43:54] "POST /7 HTTP/1.1" 200 -
-2020-06-29 11:43:54,459 - ibmfl.party.party_protocol_handler - INFO - Handling async request in a separate thread
-2020-06-29 11:43:54,459 - ibmfl.party.party_protocol_handler - INFO - Received request from aggregator
-2020-06-29 11:43:54,459 - ibmfl.party.party_protocol_handler - INFO - Received request in with message_type:  7
-2020-06-29 11:43:54,459 - ibmfl.party.party_protocol_handler - INFO - Received request in PH 7
-2020-06-29 11:43:54,459 - ibmfl.util.data_handlers.mnist_keras_data_handler - INFO - Loaded training data from examples/data/mnist/random/data_party0.npz
-x_train shape: (200, 28, 28, 1)
-200 train samples
-5000 test samples
-2020-06-29 11:43:54,502 - ibmfl.party.training.local_training_handler - INFO - Local model updated.
-2020-06-29 11:43:54,502 - ibmfl.party.training.local_training_handler - INFO - Local training started...
-2020-06-29 11:43:54,502 - ibmfl.model.keras_fl_model - INFO - Using default hyperparameters:  batch_size:128
-Epoch 1/3
-200/200 [==============================] - 0s 2ms/step - loss: 0.9385 - acc: 0.7250
-Epoch 2/3
-200/200 [==============================] - 1s 4ms/step - loss: 1.0080 - acc: 0.7200
-Epoch 3/3
-200/200 [==============================] - 1s 4ms/step - loss: 0.7465 - acc: 0.7950
-2020-06-29 11:43:56,514 - ibmfl.party.training.local_training_handler - INFO - Local training done, generating model update...
-2020-06-29 11:43:56,518 - ibmfl.party.party_protocol_handler - INFO - successfully finished async request
+stdout_party0.txt # standard output
+std_err_party0.txt # standard error
 ```
 Outputs from party 2 will be similar as party 1.
 
@@ -396,35 +324,16 @@ Outputs from party 2 will be similar as party 1.
 For a full list of supported commands, see `examples/README.md`.
 Sample outputs of issuing the `EVAL` command in one of the parties' terminal after the global training.
 ```buildoutcfg
-EVAL
-2020-06-29 11:46:05,003 - ibmfl.util.data_handlers.mnist_keras_data_handler - INFO - Loaded training data from examples/data/mnist/random/data_party0.npz
-x_train shape: (200, 28, 28, 1)
-200 train samples
-5000 test samples
-5000/5000 [==============================] - 2s 303us/step
-2020-06-29 11:46:06,542 - ibmfl.party.party_protocol_handler - INFO - {'loss': 0.6104391970634461, 'acc': 0.8152}
+stdout_party0.txt # standard output
+std_err_party0.txt # standard error
 ```
 Users can also enter `TRAIN` again at the aggregator's terminal if they want to continue the FL training.
 Entering `SYNC` at the aggregator's terminal will trigger the synchronization of the current global model with parties, 
 and `SAVE` will trigger the parties to save their models at the local working directory.
 
 ### 8. Terminate the aggregator and parties processes.
-Remember to use `STOP` to terminate the aggregator's and parties' processes and exit.
-Outputs in the aggregator terminal after running `STOP`:
-```buildoutcfg
-STOP
-2020-06-29 11:46:44,476 - root - INFO - State: States.PROC_STOP
-2020-06-29 11:46:44,476 - ibmfl.aggregator.protohandler.proto_handler - INFO - State: States.SND_REQ
-2020-06-29 11:46:44,581 - ibmfl.aggregator.protohandler.proto_handler - INFO - Total number of success responses :2
-2020-06-29 11:46:44,582 - ibmfl.connection.flask_connection - INFO - Stopping Receiver and Sender
-2020-06-29 11:46:44,584 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:46:44] "POST /shutdown HTTP/1.1" 200 -
-2020-06-29 11:46:44,585 - __main__ - INFO - Aggregator stop successful
-```
-Outputs in the party's terminal after running `STOP`:
-```buildoutcfg
-STOP
-2020-06-29 11:47:01,587 - ibmfl.connection.flask_connection - INFO - Stopping Receiver and Sender
-2020-06-29 11:47:01,591 - werkzeug - INFO - 127.0.0.1 - - [29/Jun/2020 11:47:01] "POST /shutdown HTTP/1.1" 200 -
-```
+Remember to use `STOP` to terminate the aggregator's and parties' processes and exit. For example,
+In the aggregator terminal after running `STOP'.
+In the party's terminal after running `STOP`.
 
  
