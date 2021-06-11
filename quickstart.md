@@ -333,7 +333,7 @@ and `SAVE` will trigger the parties to save their models at the local working di
 
 ### 8. Terminate the aggregator and parties processes.
 Remember to use `STOP` to terminate the aggregator's and parties' processes and exit. For example,
-In the aggregator terminal after running `STOP'.
-In the party's terminal after running `STOP`.
+In the aggregator terminal, run `STOP'.
+In the party terminal, run 'STOP'.
 
  
