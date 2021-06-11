@@ -1,14 +1,17 @@
 # Quickstart
 
 ## Try out the step-by-step Keras classifier example.
-All commands are assumed to be run from the directory where the `.whl` file is located. 
-We also assume other folders, like `examples`, are located under the same directory.
+
+### 0. Acquire an interactive job session in RC
+Use
+```commandline
+srun --mem=16G --time=03:00:00 --pty /bin/bash
+```
+Move to the working directory.
 Use 
 ```commandline
-cd <path_to_whl_directory>
+cd /home/l/longdang/Desktop/federated-learning-lib
 ```
-to arrive at the correct directory.
-
 In this example, we will train a Keras CNN model, as shown in figure below, on
 [MNIST](https://en.wikipedia.org/wiki/MNIST_database) data in the federated learning fashion. 
 ```python
@@ -38,20 +41,15 @@ model.compile(loss=keras.losses.categorical_crossentropy,
 
 ### 1. Set up a running environment for IBM federated learning.
 
-We highly recommend using Conda installation for IBM federated learning.
-If you don't have Conda, you can install it [here](https://docs.conda.io/projects/conda/en/latest/user-guide/install/). 
 If you already have Conda installed, create a new conda environment for IBM federated learning by running:
 ```commandline
-conda create -n <env_name> python=3.6 tensorflow=1.15
+conda create -n tf_21 python=3.6 tensorflow-gpu=2.1
 ```     
 Follow the prompts to install all the required packages.
-The figure below is a screenshot of sample outputs from setting up such a conda environment named *fl-demo*.
 
-<img src="./docs/assets/images/env_setup.jpg">
-
-Run `conda activate <env_name>` to activate the new Conda environment, and install the IBM federated learning package by running:
+Run `conda activate tf_21` to activate the new Conda environment, and install the IBM federated learning package by running:
 ```commandline
-pip install <IBM_federated_learning_whl_file>
+pip install federated-learning-lib/federated_learning_lib-1.0.5-py3-none-any.whl
 ```  
 
 **Note**: Lastest IBM FL library supports Keras model training with two different Tensorflow Backend versions (1.15 and 2.1). It is recommended to install IBM FL in different conda environment with different tf versions. See [here](setup.md#installation-with-conda-recommended) for details of how to set up IBM FL with a specific tensorflow backend.
@@ -110,12 +108,12 @@ You must also specify the dataset name via `-d` and the party data path via `-p`
 
 In this example, we run:
 ```commandline
-python  examples/generate_configs.py -n 2 -f iter_avg -m keras -d mnist -p examples/data/mnist/random/
+python  examples/generate_configs.py -n 2 -f iter_avg -m tf -d mnist -p examples/data/mnist/random/
 ```
 Hence, we generate 2 parties in our example, using the `mnist` dataset and `examples/data/mnist/random` as our data path.
 ```buildoutcfg
-Finished generating config file for aggregator. Files can be found in:  <whl_directory>/examples/configs/iter_avg/keras/config_agg.yml
-Finished generating config file for parties. Files can be found in:  <whl_directory>/examples/configs/iter_avg/keras/config_party*.yml
+Finished generating config file for aggregator. Files can be found in:  <whl_directory>/examples/configs/iter_avg/tf/config_agg.yml
+Finished generating config file for parties. Files can be found in:  <whl_directory>/examples/configs/iter_avg/tf/config_party*.yml
 ```
 You may also see warning messages which are fine.
 For a full description of the different options, run `python examples/generate_configs.py -h`.
@@ -135,25 +133,24 @@ connection:
 data:
   info:
     npz_file: examples/datasets/mnist.npz
-  name: MnistKerasDataHandler
+  name: MnistTFDataHandler
   path: ibmfl.util.data_handlers.mnist_keras_data_handler
 fusion:
   name: IterAvgFusionHandler
   path: ibmfl.aggregator.fusion.iter_avg_fusion_handler
 hyperparams:
   global:
-    max_timeout: 60
-    parties: 2
+    max_timeout: 120 #Increase this number if necessary. Source code is under examples/generate_configs.py
+    num_parties: 2
     rounds: 3
     termination_accuracy: 0.9
   local:
-    optimizer:
-      lr: 0.01
     training:
       epochs: 3
 protocol_handler:
   name: ProtoHandler
   path: ibmfl.aggregator.protohandler.proto_handler
+
 ```
 - Party's configuration file:
 ```yaml
@@ -163,7 +160,7 @@ aggregator:
 connection:
   info:
     ip: 127.0.0.1
-    port: 8085
+    port: 8085 #You can play with this number if it is necessary. I used 5001 based on [their example] (https://github.com/IBM/federated-learning-lib/blob/main/runner/examples/mnist/config_runner.yml) . I need advice on how to pick this number. 
     tls_config:
       enable: false
   name: FlaskConnection
