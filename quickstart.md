@@ -5,7 +5,7 @@
 ### 0. Acquire an interactive job session in RC
 Use
 ```commandline
-srun --mem=16G --time=03:00:00 --pty /bin/bash
+srun -n 1 --mem=6G --gres=gpu:1 --partition=snsm_itn19 --qos=snsm19_special -t 10:00  --pty /bin/bash
 ```
 Move to the working directory or also refer to as <whl_directory>.
 Use 
