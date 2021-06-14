@@ -1,4 +1,4 @@
-# Quickstart
+# Quickstart - Personal use only
 
 ## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
 
