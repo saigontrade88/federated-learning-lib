@@ -1,6 +1,6 @@
 # Quickstart
 
-## Try out the step-by-step Keras classifier example.
+## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
 
 ### 0. Acquire an interactive job session in RC
 Use
