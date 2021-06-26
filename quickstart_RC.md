@@ -1,11 +1,22 @@
 # Quickstart - Personal use only
 
 ## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
+### 0. Acquire Infinity band IP addresses, not the Ethernet IP addres of computing nodes on RC
+Use
+aggregator:  mdc-1057-30-7 - ib0 ip: 10.250.62.194
+party0: mdc-1057-30-8 - ib0 ip: 10.250.62.195
+party1:        mdc-1057-30-9 - ib0 ip: 10.250.62.196
+For example
+```commandline
+ping -c 3 mdc-1057-30-7 returns 10.250.46.194 which is the Ethernet IP address, but we use the Infininty band IP: 10.250.(46 + 16).194
+```
 
-### 0. Acquire an interactive job session in RC
+### 0. Start the aggregator (parameter) server in the first terminal:
 Use
 ```commandline
-srun -n 1 --mem=6G --gres=gpu:1 --partition=snsm_itn19 --qos=snsm19_special -t 10:00  --pty /bin/bash
+srun --nodes=1 --ntasks-per-node=1 --mem-per-cpu=4G --time=01:00:00 --partition=devel --qos=devel --nodelist=mdc-1057-30-7 --pty /bin/bash
+module purge
+conda activate tf_21_cpu
 ```
 Move to the working directory or also refer to as <whl_directory>.
 Use 
