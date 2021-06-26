@@ -8,10 +8,11 @@ party0: mdc-1057-30-8 - ib0 ip: 10.250.62.195
 party1:        mdc-1057-30-9 - ib0 ip: 10.250.62.196
 For example
 ```commandline
-ping -c 3 mdc-1057-30-7 returns 10.250.46.194 which is the Ethernet IP address, but we use the Infininty band IP: 10.250.(46 + 16).194
+ping -c 3 mdc-1057-30-7 
 ```
+This command returns 10.250.46.194 which is the Ethernet IP address, but we use the Infininty band IP: 10.250.(46 + 16).194
 
-### 0. Start the aggregator (parameter) server in the first terminal:
+### 1. Start the aggregator (parameter) server in the first terminal:
 Use
 ```commandline
 srun --nodes=1 --ntasks-per-node=1 --mem-per-cpu=4G --time=01:00:00 --partition=devel --qos=devel --nodelist=mdc-1057-30-7 --pty /bin/bash
@@ -19,9 +20,9 @@ module purge
 conda activate tf_21_cpu
 ```
 Move to the working directory or also refer to as <whl_directory>.
-Use 
+Use for example 
 ```commandline
-cd /home/l/longdang/Desktop/federated-learning-lib
+cd /works_bgfs/l/longdang/federated-learning-lib
 ```
 In this example, we will train a Keras CNN model, as shown in figure below, on
 [MNIST](https://en.wikipedia.org/wiki/MNIST_database) data in the federated learning fashion. 
@@ -49,22 +50,6 @@ model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.Adadelta(),
               metrics=['accuracy'])
 ```
-
-### 1. Set up a running environment for IBM federated learning.
-
-If you already have Conda installed, create a new conda environment for IBM federated learning by running:
-```commandline
-conda create -n tf_21 python=3.6 tensorflow-gpu=2.1
-```     
-Follow the prompts to install all the required packages.
-
-Run `conda activate tf_21` to activate the new Conda environment, and install the IBM federated learning package by running:
-```commandline
-pip install federated-learning-lib/federated_learning_lib-1.0.5-py3-none-any.whl
-```  
-
-**Note**: Lastest IBM FL library supports Keras model training with two different Tensorflow Backend versions (1.15 and 2.1). It is recommended to install IBM FL in different conda environment with different tf versions. See [here](setup.md#installation-with-conda-recommended) for details of how to set up IBM FL with a specific tensorflow backend.
-
 ### 2. Prepare datasets for each participating parties.
 
 For example, run
@@ -112,7 +97,7 @@ python examples/generate_configs.py -n <num_parties> -f iter_avg -m keras -d mni
 ```
 This command performs two tasks:
 
-1) It specifies the machine learning model to be trained, in this case, a Keras CNN classifier.  
+1) It specifies the machine learning model to be trained, in this case, the Keras CNN classifier.  
 
 2) It generates the configuration files necessary to train a `keras` model via fusion algorithm iter_avg, assuming `<num_parties>` parties join the federated learning training.
 You must also specify the dataset name via `-d` and the party data path via `-p`. 
@@ -129,12 +114,18 @@ Finished generating config file for parties. Files can be found in:  <whl_direct
 You may also see warning messages which are fine.
 For a full description of the different options, run `python examples/generate_configs.py -h`.
 
-Below you can see samples of configuration files.
+### 4. Manually adjust the configuration files which have been created in the previous step.
+
 - Aggregator's configuration file:
+Use
+```commandline
+vi examples/configs/iter_avg/tf/config_agg.yml, and change aggregator IP to: 10.250.62.194
+```
+Below you can see a sample of the configuration file.
 ```yaml
 connection:
   info:
-    ip: 127.0.0.1
+    ip: 10.250.62.194
     port: 5000
     tls_config:
       enable: false
@@ -164,13 +155,19 @@ protocol_handler:
 
 ```
 - Party's configuration file:
+Use
+```commandline
+vi examples/configs/iter_avg/tf/config_party0.yml, 
+```
+And change aggregator IP to: 10.250.62.194  and party0 IP to: 10.250.62.195
+Below you can see a sample of the configuration file.
 ```yaml
 aggregator:
-  ip: 127.0.0.1
+  ip: 10.250.62.194
   port: 5000
 connection:
   info:
-    ip: 127.0.0.1
+    ip: 10.250.62.195
     port: 8085 #You can play with this number if it is necessary. I used 5001 based on [their example] (https://github.com/IBM/federated-learning-lib/blob/main/runner/examples/mnist/config_runner.yml) . I need advice on how to pick this number. 
     tls_config:
       enable: false
@@ -189,18 +186,17 @@ model:
   name: TensorFlowFLModel
   path: ibmfl.model.keras_fl_model
   spec:
-    model_definition: examples/configs/iter_avg/keras/compiled_keras.h5 # For me, the parties could not load the h5 file. I updated it to be "examples/configs/iter_avg/tf" and it works!!! Need to do experiments on this key.
+    model_definition: examples/configs/iter_avg/keras/compiled_keras.h5 
     model_name: tf-cnn
 protocol_handler:
   name: PartyProtocolHandler
   path: ibmfl.party.party_protocol_handler
 ``` 
-Notice that the configuration files contain a `data` section that is different for each party. In fact, each party's points to its own data, generated from the command in step 2.
+Notice that the configuration files contain a `data` section that is different for each party. In fact, each party's points to its own data, generated from the command above.
 
 ### 4. Start the aggregator
 
-To start the aggregator, open the terminal window running the IBM federated fearning environment set up beforehand,
-and check that you are in the correct directory.  In the terminal run:
+To start the aggregator, run:
 ```commandline
 python -m ibmfl.aggregator.aggregator examples/configs/iter_avg/tf/config_agg.yml 2> stderr_agg.txt | tee stdout_agg.txt
 ```
@@ -229,18 +225,17 @@ Then in the terminal, type `START` and press enter.
 2021-06-11 10:22:47,632 | 1.0.5 | INFO | werkzeug                                      |  * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
 ```
 
-### 5. Start and register parties 
+### 5. Start party0 and register the party
 
-To start and register a new party, open one new terminal window for each party, running the IBM federated learning environment set up beforehand,
+To start and register a new party, open a new terminal window for each party, running the IBM federated learning environment set up beforehand,
 and make sure you are in the correct directory. For example, in the terminal run:
 ```commandline
-ssh longdang@svc-3024-9-12
-conda activate tf_21
-cd ~/Desktop/federated-learning-lib/
-python -m ibmfl.party.party examples/configs/iter_avg/keras/config_party<idx>.yml
+srun --nodes=1 --ntasks-per-node=1 --mem-per-cpu=4G --time=01:00:00 --partition=devel --qos=devel --nodelist=mdc-1057-30-8 --pty /bin/bash
+module purge
+conda activate tf_21_cpu
+cd /works_bgfs/l/longdang/federated-learning-lib 
+python -m ibmfl.party.party examples/configs/iter_avg/tf/config_party0.yml 2> stderr_party0.txt | tee stdout_party0.txt
 ```
-where the path provided is the path to the party's configuration file.
-
 **NOTE**: Each party will have a different configuration file;
 in our example, it is noted by changing `config_party<idx>.yml`.
 For instance, to start the 1st party, one would run:
@@ -254,7 +249,7 @@ Then type `REGISTER` and press enter to register the party for the federated lea
 START
 REGISTER
 ```
-The aggregator terminal will also prompt out INFO to show that it receives the party's registration message (as shown in the third figure on the right).
+The aggregator terminal will also prompt out INFO to show that it receives the party's registration message as shown below
 ```buildoutcfg
 2021-06-11 10:23:57,316 | 1.0.5 | INFO | ibmfl.connection.flask_connection             | Request received for path :6
 2021-06-11 10:23:57,317 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Adding party with id 44874e3d-b19e-430c-89ca-000d066a79f3
@@ -265,7 +260,18 @@ The aggregator terminal will also prompt out INFO to show that it receives the p
 2021-06-11 10:24:00,900 | 1.0.5 | INFO | ibmfl.aggregator.protohandler.proto_handler   | Total number of registered parties:2
 2021-06-11 10:24:00,901 | 1.0.5 | INFO | werkzeug                                      | 127.0.0.1 - - [11/Jun/2021 10:24:00] "POST /6 HTTP/1.1" 200 -
 ```
-
+### 6. Start party1 and register the party
+Open a new terminal
+```commandline
+srun --nodes=1 --ntasks-per-node=1 --mem-per-cpu=4G --time=01:00:00 --partition=devel --qos=devel --nodelist=mdc-1057-30-9 --pty /bin/bash
+module purge
+conda activate tf_21_cpu
+python -m ibmfl.party.party examples/configs/iter_avg/tf/config_party1.yml 2> stderr_party1.txt | tee stdout_party1.txt
+```
+INSIDE PARTY1 COMMAND WINDOW:
+START
+REGISTER
+ 
 ### 6. Initiate training from the aggregator
 To initiate federated training, type `TRAIN` in your aggregator terminal and press enter.
 **NOTE**: In this example, we have 2 parties join the training and we run 3 global rounds, each round with 3 local epochs.
