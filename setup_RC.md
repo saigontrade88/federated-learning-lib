@@ -1,6 +1,6 @@
 This README explains how to setup and run IBM federated learning from scratch on RC. 
 ## Clone IBM federated learning
-Use
+For example
 ```commandline
 cd /work_bgfs/l/longdang/
 git clone https://github.com/IBM/federated-learning-lib.git
