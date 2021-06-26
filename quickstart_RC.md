@@ -25,31 +25,124 @@ Use for example
 cd /works_bgfs/l/longdang/federated-learning-lib
 ```
 In this example, we will train a Keras CNN model, as shown in figure below, on
-[MNIST](https://en.wikipedia.org/wiki/MNIST_database) data in the federated learning fashion. 
+[MNIST](https://en.wikipedia.org/wiki/MNIST_database) data in the federated learning fashion.
+
+Creat and save the below python program named save_tf_pretrained_model.py under '/works_bgfs/l/longdang/federated-learning-lib/examples'
 ```python
-num_classes = 10
-img_rows, img_cols = 28, 28
-if K.image_data_format() == 'channels_first':
-    input_shape = (1, img_rows, img_cols)
-else:
-    input_shape = (img_rows, img_cols, 1)
+#!/usr/bin/env python3
+import os
+import numpy as np
+import tensorflow as tf
+# from tensorflow.keras.layers import Dense, Flatten, Conv2D
+from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import Model
 
-model = Sequential()
-model.add(Conv2D(32, kernel_size=(3, 3),
-                 activation='relu',
-                 input_shape=input_shape))
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.25))
-model.add(Flatten())
-model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
+from art.config import ART_DATA_PATH
 
-model.compile(loss=keras.losses.categorical_crossentropy,
-              optimizer=keras.optimizers.Adadelta(),
-              metrics=['accuracy'])
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
+
+import argparse
+
+def setup_parser():
+    """
+    Sets up the parser for Python script
+
+    :return: a command line parser
+    :rtype: argparse.ArgumentParser
+    """
+    p = argparse.ArgumentParser()
+    p.add_argument("--model_path", "-p")
+    
+    return p
+    
+    
+def save_model_config(folder_configs):
+    
+    '''Source: https://www.tensorflow.org/guide/keras/save_and_serialize '''
+    path = get_file('cifar_resnet.h5',extract=False, path=ART_DATA_PATH, url='https://www.dropbox.com/s/ta75pl4krya5djj/cifar_resnet.h5?dl=1')
+
+    # 4. Feature extraction
+    classifier_model = load_model(path)
+    json_config = classifier_model.to_json()
+    new_model = tf.keras.models.model_from_json(json_config)
+    #binary classification
+    fc2 = Dense(2, activation='softmax')(new_model.layers[-2].output)
+    cifar_model = Model(inputs=new_model.input, outputs=fc2)
+    cifar_model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.0002, beta_1=0.5), metrics=['accuracy'])
+
+
+
+    if not os.path.exists(folder_configs):
+        os.makedirs(folder_configs)
+
+    # Save model
+    fname = os.path.join(folder_configs, 'compiled_cifar_resnet.h5')
+    cifar_model.save(folder_configs)
+    
+    # Generate model spec:
+    spec = {
+        'model_name': 'tf-cifar-resnet-cnn',
+        'model_definition': folder_configs
+    }
+
+    model = {
+        'name': 'TensorFlowFLModel',
+        'path': 'ibmfl.model.tensorflow_fl_model',
+        'spec': spec
+    }
+
+    return model
+if __name__ == '__main__':
+    # Parse command line options
+    parser = setup_parser()
+    args = parser.parse_args()
+
+    # Collect arguments
+    model_path = args.model_path
+    
+    save_model_config(model_path)
+
 ```
+Create and save the below .sh program under '/works_bgfs/l/longdang/federated-learning-lib'
+```python
+#! /bin/bash
+#SBATCH -o load_resnet
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:2
+#SBATCH --mem=48G
+#SBATCH --time=00:30:00
+#SBATCH --job-name=testing_1
+#SBATCH --partition=snsm_itn19
+#SBATCH --qos=snsm19_special
+#SBATCH --mail-user=longdang@usf.edu  
+#SBATCH --mail-type=ALL
+
+module purge
+
+module add apps/cuda/10.1
+
+source $HOME/.bashrc
+
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
+
+conda activate tf_21_dev
+python3 examples/save_tf_pretrained_model.py --model_path examples/configs/iter_avg/tf/rest_net/
+conda deactivate
+```
+Run
+```commandline
+cd /works_bgfs/l/longdang/federated-learning-lib
+sbatch save_Resnet_model.sh
+```
+
 ### 2. Prepare datasets for each participating parties.
 
 For example, run
@@ -186,8 +279,8 @@ model:
   name: TensorFlowFLModel
   path: ibmfl.model.keras_fl_model
   spec:
-    model_definition: examples/configs/iter_avg/keras/compiled_keras.h5 
-    model_name: tf-cnn
+    model_definition: examples/configs/iter_avg/tf/rest_net/ # Make sure the model exists in this path. Update it if necessary.
+    model_name: tf-cifar-resnet-cnn
 protocol_handler:
   name: PartyProtocolHandler
   path: ibmfl.party.party_protocol_handler
@@ -268,7 +361,7 @@ module purge
 conda activate tf_21_cpu
 python -m ibmfl.party.party examples/configs/iter_avg/tf/config_party1.yml 2> stderr_party1.txt | tee stdout_party1.txt
 ```
-INSIDE PARTY1 COMMAND WINDOW:
+INSIDE PARTY1 COMMAND WINDOW, enter
 START
 REGISTER
  
