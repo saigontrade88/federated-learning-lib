@@ -1,5 +1,4 @@
 This README explains how to setup and run IBM federated learning from scratch on RC. 
-
 ## Clone IBM federated learning
 Use
 ```commandline
@@ -7,7 +6,7 @@ cd /work_bgfs/l/longdang/
 git clone https://github.com/IBM/federated-learning-lib.git
 pwd
 cd federated-learning-lib
-'''
+```
 All commands are assumed to be run from the current directory.
 
 ## Setup IBM federated learning
@@ -54,4 +53,4 @@ you can [install it here](https://docs.conda.io/projects/conda/en/latest/user-gu
  ```commandline
    conda install -c anaconda paramiko -y
    pip install http://github.com/IBM/pycloudmessenger/archive/v0.7.1.tar.gz
- '''
+ ```
