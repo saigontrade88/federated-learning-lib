@@ -48,7 +48,7 @@ you can [install it here](https://docs.conda.io/projects/conda/en/latest/user-gu
    Use
    ```commandline
    pip install federated-learning-lib/federated_learning_lib-1.0.5-py3-none-any.whl 
-   '''
+   ```
  4. Install additional packages:
  ```commandline
    conda install -c anaconda paramiko -y
