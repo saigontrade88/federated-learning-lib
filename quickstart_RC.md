@@ -1,5 +1,9 @@
 # Quickstart - Personal use only
 
+Note: If you lose connection to CIRCE while an SRUN session is running, then your SRUN sessions which is heavily used in this guide will be terminated.
+
+A good solution suggested by RC is to start a tmux session for each SRUN you want to run, then run the SRUN command(s) inside of the tmux session(s). This approach is quickly described in Part 9 below.
+
 ## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
 ### 0. Acquire Infinity band IP addresses, not the Ethernet IP addres of computing nodes on RC
 Use
@@ -445,5 +449,28 @@ and `SAVE` will trigger the parties to save their models at the local working di
 Remember to use `STOP` to terminate the aggregator's and parties' processes and exit. For example,
 In the aggregator terminal, run `STOP'.
 In the party terminal, run 'STOP'.
+
+### 9. Setting distributed training overnights.
+1. Connect to a specific CIRCE login node via SSH using it's public IP address (ie: for itn0, you'd type: ssh longdang@131.247.250.116)
+2. Start a tmux session for the aggregator: tmux new -s aggregator
+3. Inside of this session, start your SRUN command for the aggregator
+4. Once the SRUN is submitted, disconnect from the tmux session using "ctl-b d"
+5. Start a tmux session for party0: tmux new -s party0
+6. Inside of this session, start your SRUN command for party0
+7. Once the SRUN is submitted, disconnect from the tmux session using "ctl-b d"
+8. Repeat steps 5-7 for each additional party you need to start
+You can then:
+
+1. switch between the different tmux sessions and issue the console commands as needed.
+- for example, to connect to the aggregator tmux session, you'd run "tmux attach -t aggregator"
+- to list tmux sessions available, you'd run "tmux ls"
+2. detach from all tmux sessions when you need to disconnect from CIRCE, but want the SRUN sessions to continue processing
+
+Once the tmux sessions are started, if you lose connection to CIRCE, the tmux sessions will continue running. Once your connection to CIRCE is restored, you can re-attach to the tmux sessions.
+
+**Please Note:** You will need to ensure that you SSH back in to the exact login node that you launched the tmux sessions on (in this example, itn0). Otherwise when you run "tmux ls", nothing will show up.
+
+I invite you to have a look at the documentation for tmux via the command **"man tmux"**, as it is feature-rich and has many options available.
+
 
  
