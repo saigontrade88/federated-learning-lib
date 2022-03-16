@@ -42,14 +42,19 @@ import experiment_manager.ibmfl_cli_automator.postprocess as ibmfl_postproc
 # X think about local config write location in copy_config_to_server
 
 
+myPass='student'
+
 class Runner:
     '''
     The runner class contains all the shared information about the ongoing runs, and has the capability of
     organizing the configuration of experiments where IBMFL runs are triggered in parameterized
     ways.
     '''
-    __cmds_agg = 'START\nTRAIN\nEVAL\nSTOP'
+    __cmds_agg = 'START\nTRAIN\nEVAL\nSYNC\nSTOP'
+    # __cmds_agg = 'START\nTRAIN\nEVAL\nSAVE\nSYNC\nSTOP'
+    #__cmds_agg = 'START\n'
     __cmds_party = 'START\nREGISTER'
+    
 
 
     def __init__(self):
@@ -68,7 +73,7 @@ class Runner:
 
     @staticmethod
     def generate_timestamp():
-        return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        return datetime.now().strftime("%Y%m%dT%H%M%S")
 
 
     @staticmethod
@@ -203,6 +208,7 @@ class Runner:
         """
         # copy from local to remote
         if path_local == path_remote:
+            print('no copy {} to {}'.format(path_local, path_remote))
             return
         path_remote_dir = Path(path_remote).parent
         (status, outstr) = Runner.__exec_command_sync(client,
@@ -260,9 +266,15 @@ class Runner:
         :rtype: `paramiko.client.SSHClient`
         """
         client = paramiko.SSHClient()
+        client.load_host_keys('/home/student/.ssh/known_hosts')
         client.load_system_host_keys()
-        client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
-        client.connect(server_in, port=port_in, username=username_in)
+        #client.set_missing_host_key_policy(paramiko.MissingHostKeyPolicy())
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        #print(f'server_in {server_in}')
+        #print(f'port_in {port_in}')
+        #print(f'username_in {username_in}')
+        client.connect(server_in, port=port_in, username=username_in, password=myPass)
         return client
 
 
@@ -296,6 +308,7 @@ class Runner:
             print("Bad config path.")
             exit(0)
         sftp = client.open_sftp()
+        #print('copying {} to {}'.format(config_path_loc, config_path_rem))
         sftp.put(config_path_loc,
                  config_path_rem)
 
@@ -324,10 +337,10 @@ class Runner:
         # start job on server
         if machine_info['venv_uses_conda']:
             python_str = 'python'
-            activate_str = 'conda activate {} && '.format(machine_info['venv_dir'])
+            activate_str = 'source {} tf_15 && '.format(machine_info['venv_dir'])
             deactivate_str = ' && conda deactivate'
         else:
-            python_str = '{}/bin/python'.format(machine_info['venv_dir'])
+            python_str = 'python3'.format(machine_info['venv_dir'])
             activate_str = ''
             deactivate_str = ''
         # build command
@@ -382,7 +395,10 @@ class Runner:
             f'{local_staging_dir}/config_agg.yml',
             agg_client,
             f'{machine_staging_dir}/config_agg.yml')
+        
         for supp_file in agg_files:
+            print('{}'.format(supp_file.name))
+            
             Runner.__copy_to_server(
                 str(supp_file),
                 agg_client,
@@ -394,10 +410,39 @@ class Runner:
                                                    'agg',
                                                    ts,
                                                    obtain_stdout=True)
+                         
         agg_handles = agg_client.exec_command(agg_exec_string)
-        # print(f'Agg command {agg_exec_string} started')
-
-        # write the commands to the job's stdin
+        print(f'Agg command {agg_exec_string} started')
+        #################################################################
+        # tell process we won't send anything to stdin
+        #(stdin, stdout, stderr) = agg_handles
+        
+        #stdin.channel.shutdown_write()
+        #outstr = ''
+        #errstr = ''
+        
+        # read output so we dont hang later on
+        #while not stdout.channel.exit_status_ready():
+        #    while stdout.channel.recv_ready():
+        #        outstr += stdout.channel.recv(1024).decode()
+        #    while stderr.channel.recv_ready():
+        #        errstr += stderr.channel.recv(1024).decode()
+        #    time.sleep(1)
+        # get exit status and rest of output
+        #status = stdout.channel.recv_exit_status()
+        #while stdout.channel.recv_ready():
+        #    outstr += stdout.channel.recv(1024).decode()
+        #while stderr.channel.recv_ready():
+        #    errstr += stdout.channel.recv(1024).decode() 
+            
+        # get error message if exit status is bad
+        #if status != 0:
+        #    ip, _ = agg_client.get_transport().getpeername()
+        #    sys.exit(f'Error executing command \'{agg_exec_string}\' on remote {agg_ip} with exit code {status}!\nstdout: \'{outstr}\'\nstderr: \'{errstr}\'')      	#################################################################			  
+        #print(agg_handles[1].read().decode())
+        #print(agg_handles[2].read().decode())
+        
+        #write the commands to the job's stdin
         with BytesIO(Runner.__cmds_agg.encode('utf8')) as cmds_agg_file:
             with TextIOWrapper(cmds_agg_file, encoding='utf8') as cmds:
                 for cmd in cmds:
@@ -663,7 +708,10 @@ class Runner:
         :return: None
         """
         if local_staging_dir == machine_staging_dir:
+            #print("local_staging_dir == machine_staging_dir.")
             return
+        #print(f'machine_staging_dir {machine_staging_dir}')
+        #print(f'local_staging_dir {local_staging_dir}')
         Runner.__copy_from_server(f'{machine_staging_dir}/stdout_{tag}.txt',
                                   client,
                                   f'{local_staging_dir}/stdout_{tag}.txt')
@@ -1003,13 +1051,16 @@ class Runner:
 
         # copy back logs and metrics
         machine_staging_dir = \
-            f"{trial_info['party_machines'][pi]['staging_dir']}/{ts}"
+            f"{trial_info['agg_machine']['staging_dir']}/{ts}"
         local_staging_dir = \
             f"{trial_info['local_staging_dir']}/{self.__exp_timestamp}/trial{self.__trial_cur}"
         Runner.__copy_logs_to_local(machine_staging_dir,
                                     agg_client,
                                     local_staging_dir, 'agg')
         for pi in range(trial_info['n_parties']):
+        
+            machine_staging_dir = \
+            f"{trial_info['party_machines'][pi]['staging_dir']}/{ts}"
             Runner.__copy_logs_to_local(machine_staging_dir,
                                         party_clients[pi],
                                         local_staging_dir, f'party{pi}')
@@ -1087,7 +1138,7 @@ class Runner:
         for ti in range(n_trials):
             self.__trial_cur = ti+1
             trial_info = self.get_trial_info(exp_info, machines, ti)
-            ts_obj = datetime.now(timezone.utc)
+            ts_obj = datetime.now()
             ts_fname = ts_obj.strftime("%Y%m%dT%H%M%S")
             ts_print = ts_obj.strftime('%Y-%m-%d %H:%M:%S')
             print('Starting trial {}/{} at {}:'.format(ti+1, n_trials, ts_print))

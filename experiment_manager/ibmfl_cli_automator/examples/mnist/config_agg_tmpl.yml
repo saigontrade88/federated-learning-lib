@@ -26,7 +26,7 @@ hyperparams:
     optimizer:
       lr: 0.01
     training:
-      epochs: 100
+      epochs: 1
 protocol_handler:
   name: ProtoHandler
   path: ibmfl.aggregator.protohandler.proto_handler

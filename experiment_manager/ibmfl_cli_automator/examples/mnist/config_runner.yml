@@ -1,11 +1,11 @@
 machines:
   default:
-    ssh_username: slaguna
+    ssh_username: student
     port_number: 8086
-    staging_dir: /data/slaguna/sandbox/IBMFL/test_mnist
-    ibmfl_dir: /data/slaguna/repos/IBMFL
-    venv_dir: .venv
-    venv_uses_conda: False
+    staging_dir: /home/student/federated-learning-lib
+    ibmfl_dir: /home/student/federated-learning-lib
+    venv_dir: /home/student/miniconda3/bin/activate
+    venv_uses_conda: True
   syl2:
     ip_address: 9.192.210.210
     port_number: 5000
@@ -16,33 +16,33 @@ machines:
   syl25:
     ip_address: 9.192.244.60
   local_agg:
-    ssh_username: sean
+    ssh_username: student
     ip_address: 127.0.0.1
     port_number: 5000
-    staging_dir: /tmp/IBMFL/test_mnist_staging
-    ibmfl_dir: /home/sean/repos/IBMFL
+    staging_dir: /home/student/federated-learning-lib/experiment_manager/ibmfl_cli_automator/local/aggregator
+    ibmfl_dir: /home/student/federated-learning-lib
   local_p1:
-    ssh_username: sean
+    ssh_username: student
     ip_address: 127.0.0.1
     port_number: 5001
-    staging_dir: /tmp/IBMFL/test_mnist_staging
-    ibmfl_dir: /home/sean/repos/IBMFL
+    staging_dir: /home/student/federated-learning-lib/experiment_manager/ibmfl_cli_automator/local/client1
+    ibmfl_dir: /home/student/federated-learning-lib
   local_p2:
-    ssh_username: sean
+    ssh_username: student
     ip_address: 127.0.0.1
     port_number: 5002
-    staging_dir: /tmp/IBMFL/test_mnist_staging
-    ibmfl_dir: /home/sean/repos/IBMFL
+    staging_dir: /home/student/federated-learning-lib/experiment_manager/ibmfl_cli_automator/local/client2
+    ibmfl_dir: /home/student/federated-learning-lib
 
 experiments:
-  - local_staging_dir: /home/sean/sandbox/IBMFL/test_mnist
-    local_ibmfl_dir: /home/sean/repos/IBMFL
-    agg_machine: syl23
+  - local_staging_dir: /home/student/federated-learning-lib/experiment_manager/ibmfl_cli_automator/local/experiments
+    local_ibmfl_dir: /home/student/federated-learning-lib
+    agg_machine: local_agg
     n_parties: 2
-    party_machines: [ syl24, syl25 ]
+    party_machines: [ local_p1, local_p2 ]
     shuffle_party_machines: False
-    n_trials: 2
-    n_rounds: 5
+    n_trials: 1
+    n_rounds: 1
     postproc_fn: gen_reward_vs_time_plots
     postproc_x_key: 'post_train:ts'
     postproc_y_keys: [
