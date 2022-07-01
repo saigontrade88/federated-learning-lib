@@ -3,6 +3,7 @@
 ## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
 
 ### 0. Clone the repository
+You can choose a working folder that other group members can access to so that you can ask for help if necessary.
 ### 0. Acquire an interactive job session in RC
 Use
 ```commandline
@@ -11,7 +12,7 @@ srun -n 1 --mem=6G --gres=gpu:1 --partition=snsm_itn19 --qos=snsm19_special -t 1
 Move to the working directory or also refer to as <whl_directory>.
 Use 
 ```commandline
-cd /home/l/longdang/Desktop/federated-learning-lib
+cd <Your working folder path>/federated-learning-lib
 ```
 In this example, we will train a Keras CNN model, as shown in figure below, on
 [MNIST](https://en.wikipedia.org/wiki/MNIST_database) data in the federated learning fashion. 
@@ -52,6 +53,7 @@ Run `conda activate tf_21` to activate the new Conda environment, and install th
 ```commandline
 pip install federated-learning-lib/<IBM_federated_learning_whl_file>
 ```  
+You might need to install an adversarial ML library such as IBM Adversarial Toolbox.
 
 **Note**: Lastest IBM FL library supports Keras model training with two different Tensorflow Backend versions (1.15 and 2.1). It is recommended to install IBM FL in different conda environment with different tf versions. See [here](setup.md#installation-with-conda-recommended) for details of how to set up IBM FL with a specific tensorflow backend.
 
