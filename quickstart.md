@@ -2,6 +2,7 @@
 
 ## Try out the step-by-step Tensorflow - Keras classifier example (TF 2.0).
 
+### 0. Clone the repository
 ### 0. Acquire an interactive job session in RC
 Use
 ```commandline
@@ -49,7 +50,7 @@ Follow the prompts to install all the required packages.
 
 Run `conda activate tf_21` to activate the new Conda environment, and install the IBM federated learning package by running:
 ```commandline
-pip install federated-learning-lib/federated_learning_lib-1.0.5-py3-none-any.whl
+pip install federated-learning-lib/<IBM_federated_learning_whl_file>
 ```  
 
 **Note**: Lastest IBM FL library supports Keras model training with two different Tensorflow Backend versions (1.15 and 2.1). It is recommended to install IBM FL in different conda environment with different tf versions. See [here](setup.md#installation-with-conda-recommended) for details of how to set up IBM FL with a specific tensorflow backend.
